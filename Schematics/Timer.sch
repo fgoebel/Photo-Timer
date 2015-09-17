@@ -138,8 +138,8 @@ $Comp
 L RECTIFIER U?
 U 1 1 55FB2095
 P 2450 1100
-F 0 "U?" H 2450 1100 0   0001 C CNN
-F 1 "RECTIFIER" H 2450 1100 0   0001 C CNN
+F 0 "U?" H 2450 1100 60  0001 C CNN
+F 1 "RECTIFIER" H 2450 1100 60  0001 C CNN
 F 2 "" H 2450 1100 60  0000 C CNN
 F 3 "" H 2450 1100 60  0000 C CNN
 	1    2450 1100
@@ -231,9 +231,8 @@ F 1 "FINDER-36.11.4001" H 2000 2200 50  0000 L CNN
 F 2 "" H 1550 2150 60  0000 C CNN
 F 3 "" H 1550 2150 60  0000 C CNN
 	1    1550 2150
-	-1   0    0    -1  
+	-1   0    0    1   
 $EndComp
-NoConn ~ 1450 1850
 $Comp
 L DIODE D?
 U 1 1 55FB3EFF
@@ -606,15 +605,9 @@ Wire Wire Line
 Wire Wire Line
 	900  800  1050 800 
 Wire Wire Line
-	1750 1850 2100 1850
-Wire Wire Line
 	2100 1750 2100 1950
 Wire Wire Line
-	1750 2450 2100 2450
-Wire Wire Line
 	2100 2350 2100 2550
-Connection ~ 2100 1850
-Connection ~ 2100 2450
 Wire Wire Line
 	2400 2750 2450 2750
 Wire Wire Line
@@ -625,13 +618,7 @@ Connection ~ 1000 800
 Wire Wire Line
 	1050 1200 1050 1550
 Wire Wire Line
-	1050 1550 1250 1550
-Wire Wire Line
-	1250 1550 1250 1850
-Wire Wire Line
-	1350 2450 1350 3050
-Wire Wire Line
-	1350 3050 1000 3050
+	1050 1550 1350 1550
 Wire Wire Line
 	2450 4650 3350 4650
 Wire Wire Line
@@ -718,7 +705,7 @@ Connection ~ 6350 4350
 Wire Wire Line
 	9150 5200 8750 5200
 Wire Wire Line
-	8750 4450 8750 5200
+	8750 5200 8750 4450
 Connection ~ 6250 4450
 Wire Wire Line
 	8100 5200 8250 5200
@@ -809,7 +796,7 @@ Wire Wire Line
 Wire Wire Line
 	5950 4350 8850 4350
 Wire Wire Line
-	5950 4450 8750 4450
+	8750 4450 5950 4450
 Wire Wire Line
 	5450 4450 5350 4450
 Wire Wire Line
@@ -828,4 +815,17 @@ Wire Wire Line
 	5350 5050 5800 5050
 Wire Wire Line
 	5700 5150 5350 5150
+Wire Wire Line
+	1750 2450 2100 2450
+Connection ~ 2100 2450
+Wire Wire Line
+	1750 1850 2100 1850
+Connection ~ 2100 1850
+NoConn ~ 1450 2450
+Wire Wire Line
+	1350 1550 1350 1850
+Wire Wire Line
+	1250 2450 1250 3050
+Wire Wire Line
+	1250 3050 1000 3050
 $EndSCHEMATC
