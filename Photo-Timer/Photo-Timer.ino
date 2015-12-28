@@ -42,7 +42,8 @@ int debounce = 20; //
 
 
 int TimeToDisplay = 0; //wert in Sec *10 ->> zentel Sekunden sind per integer darstellbar
-int TimeSet = 25; // muss long sein, sonst läuft waitTime über.. warum?
+int TimeSet = 25; // Berechnung long = int * int geht nicht.. auf long = int * long geändert.
+int TimeSave = 0; //um nach ablauf auf eingestellten Wert zurückzusetzen.
 unsigned long waitTime = 0; //ms Verzögerung Motor 
 int updateInterval = 100; //ms um display upzudaten.
 unsigned long currentMillis;
@@ -126,9 +127,14 @@ void waiting(void){
   
   if (currentMillis - waitStartTime >= waitTime){
     state = STOPPING;
+    TimeSet = TimeSave;
+    TimeSave = 0;
     }
   if (!justStarted && buttonPressed[ButtonSTART] ) {//wenn StartStopp gedrückt -> gehe in stopping
     state = STOPPING;
+    if (TimeSave == 0 ){
+    TimeSave = TimeSet; 
+    }
     TimeSet = TimeToDisplay; // um das abzuspeichern
   }
 }
