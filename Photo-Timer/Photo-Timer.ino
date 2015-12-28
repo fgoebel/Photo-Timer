@@ -44,6 +44,9 @@ int debounce = 20; //
 int TimeToDisplay = 0; //wert in Sec *10 ->> zentel Sekunden sind per integer darstellbar
 int TimeSet = 25; // Berechnung long = int * int geht nicht.. auf long = int * long geändert.
 int TimeSave = 0; //um nach ablauf auf eingestellten Wert zurückzusetzen.
+int LedTime; //zeit in µs welche die LEDs an sind..
+int maxLedTime = 2000;
+byte brightness = 100;
 unsigned long waitTime = 0; //ms Verzögerung Motor 
 int updateInterval = 100; //ms um display upzudaten.
 unsigned long currentMillis;
@@ -53,6 +56,8 @@ unsigned long lastDisplayTime = 0 ;
 unsigned long TimeSetLastChanged = 0 ;
 unsigned long lastStartTime = 0;
 unsigned long lastStopTime = 0;
+
+unsigned long timeRound = 0;
 //SETUP//
 void setup() {
   for(int i = 0; i < 7; i++)
@@ -70,11 +75,14 @@ void setup() {
   pinMode(buttonArray[i],INPUT); //button pins as input
   digitalWrite(buttonArray[i],HIGH); //button pins enable Pullup
  }
+
+brightness = constrain(brightness, 0, 100);
+LedTime = map(brightness,0,100,0,maxLedTime);
+ 
 }
 // END SETUP //
 void loop() {
 currentMillis = millis();
-
 
 switch (state) {
   case WAITING:
@@ -94,6 +102,7 @@ switch (state) {
 //jeder Loop zu tun
 button();
 anzeige(TimeToDisplay); //wert der Angezeigt werden soll  
+//Serial.println(TimeSave);
 /* startStop ?? state = IDLING;
 *
  * if ButtonSTART und ich bin nicht in Idling -> idling. sonst verlasse Idling
@@ -127,8 +136,10 @@ void waiting(void){
   
   if (currentMillis - waitStartTime >= waitTime){
     state = STOPPING;
+    if (TimeSave != 0 ){
     TimeSet = TimeSave;
     TimeSave = 0;
+      }
     }
   if (!justStarted && buttonPressed[ButtonSTART] ) {//wenn StartStopp gedrückt -> gehe in stopping
     state = STOPPING;
@@ -142,45 +153,45 @@ void waiting(void){
 void idling(void) {
   //
   int incrementDelay;
-  if (buttonPressed[ButtonUP]){
-    incrementDelay = calcIncDelay(currentMillis, buttonPressed[ButtonUP],lastButtonTime[ButtonUP]); //ms verzögerung
-  }
-  if (buttonPressed[ButtonDOWN]){
-    incrementDelay = calcIncDelay(currentMillis, buttonPressed[ButtonDOWN],lastButtonTime[ButtonDOWN]); //ms verzögerung
+
+    if (buttonPressed[ButtonUP]){
+      incrementDelay = calcIncDelay(currentMillis, buttonPressed[ButtonUP],lastButtonTime[ButtonUP]); //ms verzögerung
     }
-  
-  if (buttonPressed[ButtonSTART] && !justStopped) { 
-    state = STARTING;
-    return;
-    }
-    int increment = 1;
+    if (buttonPressed[ButtonDOWN]){
+      incrementDelay = calcIncDelay(currentMillis, buttonPressed[ButtonDOWN],lastButtonTime[ButtonDOWN]); //ms verzögerung
+      }
     
-  if (currentMillis - TimeSetLastChanged > incrementDelay) {
-    if ((buttonPressed[ButtonUP] && !buttonPressed[ButtonDOWN])&&(TimeSet < 990)) {
-      if (TimeSet >=100)
-        increment = 10;
-      TimeSet += increment;
-      TimeSetLastChanged = currentMillis;
+    if (buttonPressed[ButtonSTART] && !justStopped) { 
+      state = STARTING;
+      return;
       }
-    else if ((buttonPressed[ButtonDOWN] && !buttonPressed[ButtonUP]) && (TimeSet > 0)) {
-      if (TimeSet>110){
-        increment=10;
-        TimeSet -= increment;
-      }
-      else if (TimeSet > 100)
-        TimeSet = 100;
-      else
-        TimeSet -= increment;
-      TimeSetLastChanged = currentMillis;
-      }
+      int increment = 1;
+  if (TimeSave == 0){
+    if (currentMillis - TimeSetLastChanged > incrementDelay) {
+      if ((buttonPressed[ButtonUP] && !buttonPressed[ButtonDOWN])&&(TimeSet < 990)) {
+        if (TimeSet >=100)
+          increment = 10;
+        TimeSet += increment;
+        TimeSetLastChanged = currentMillis;
+        }
+      else if ((buttonPressed[ButtonDOWN] && !buttonPressed[ButtonUP]) && (TimeSet > 0)) {
+        if (TimeSet>110){
+          increment=10;
+          TimeSet -= increment;
+        }
+        else if (TimeSet > 100)
+          TimeSet = 100;
+        else
+          TimeSet -= increment;
+        TimeSetLastChanged = currentMillis;
+        }    
+    }
+    if (!buttonPressed[ButtonDOWN] && ! buttonPressed[ButtonUP]){
+       TimeSetLastChanged = 0;
+    }
   }
-  
-  
-  if (!buttonPressed[ButtonDOWN] && ! buttonPressed[ButtonUP]){
-     TimeSetLastChanged = 0;
-  }
-  
-  TimeToDisplay = TimeSet;
+    TimeToDisplay = TimeSet;
+  //nur wenn TimeSave nicht gesetzt ist..
 }
 
 int calcIncDelay(unsigned long currentMillis, bool buttonPressed, unsigned long lastButtonTime){
@@ -246,12 +257,12 @@ void ansteuerung(int a,bool doDecimalPoint){
     digitalWrite(pinArray[6-j], bitRead(segmente[a],j) == 1?LOW:HIGH);
   }
   digitalWrite(decimalPoint, doDecimalPoint?LOW:HIGH); //geht, man weiss aber nicht warum.
-  delay(1); //sorgt dafür, dass die Elemente eine Weile an sind..
+  delayMicroseconds(LedTime); //sorgt dafür, dass die Elemente eine Weile an sind..
   for (int j = 6; j >=0 ;j--){
     digitalWrite(pinArray[6-j], HIGH);
     }
     digitalWrite(decimalPoint, HIGH);
-  //delay(2);
+  delayMicroseconds(maxLedTime - LedTime);
 }
 
 
