@@ -21,17 +21,20 @@ enum  motorStates {WAITING_FOR_HIGH, WAITING_FOR_LOW};
 motorStates motorState = WAITING_FOR_HIGH; //bei IR HIGH sind wir auf der Scheibe und können dann gezielt auf low warten.
 
 
-byte pinArray[] = {2,3,4,5,6,7,8}; // Segmente A,B,C,D,E,F,G
-byte decimalPoint = 9;
-byte einerStelle = 12;
+byte pinArray[] = {16,15,10,11,9,17,18}; // Segmente A,B,C,D,E,F,G
+byte decimalPoint = 12;
+byte einerStelle = 14; //A0
 byte zehnerStelle = 13;
 byte relayPin = A5;
 
-byte buttonArray[] = {16,17,18}; //DOWN A2, UP A3, START A4
+byte buttonArray[] = {5,6,7}; //DOWN 16/A2, UP 17/A3, START 18/A4
 unsigned long lastButtonTime[] = {0,0,0}; //Die Zeiten, wann welcher knop das letzte mal gedrückt wurde..
 bool buttonPressed[] = {false,false,false};
 bool justStarted = false;
 bool justStopped = false;
+
+#include <Encoder.h>
+Encoder myEnc(2, 3);
 
 #define ButtonDOWN 0
 #define ButtonUP 1
