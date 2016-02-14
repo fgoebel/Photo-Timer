@@ -32,7 +32,7 @@ bool isPressed = false; //wenn buttonPin gedrückt ist
 bool clickPress = false;
 bool longPress = false; 
 bool longPressDisable = false;
-int longPressDuration = 1000;
+#define longPressDuration 1000
 
 unsigned long buttonPressTime = 0;
 unsigned long lastReleaseTime = 0;
@@ -43,9 +43,11 @@ bool justStopped = false;
 
 //#include <Encoder.h>
 //Encoder myEnc(2, 3); //besser später selbst implementieren.
+#define ENCODER_A 2
+#define ENCODER_B 3
+volatile int encoder = 0;
 
-
-int debounce = 20; //
+#define debounce 20 //
 
 
 int TimeToDisplay = 0; //wert in Sec *10 ->> zentel Sekunden sind per integer darstellbar
@@ -81,8 +83,10 @@ void setup() {
 
 //init Inputs
   pinMode(buttonPin,INPUT_PULLUP); //button pins as input with Pullup
+  pinMode(ENCODER_A,INPUT_PULLUP);
+  pinMode(ENCODER_B,INPUT_PULLUP);
 
-
+  attachInterrupt(digitalPinToInterrupt(ENCODER_A),encoderInterrupt,CHANGE); //interrupt für Rotary-Encoder.
 
 brightness = constrain(brightness, 0, 100);
 LedTime = map(brightness,0,100,0,maxLedTime);
@@ -110,14 +114,21 @@ switch (state) {
 //jeder Loop zu tun
 button();
 anzeige(TimeToDisplay); //wert der Angezeigt werden soll  
-//Serial.println(TimeSave);
+Serial.println(encoder);
 /* startStop ?? state = IDLING;
 *
  * if ButtonSTART und ich bin nicht in Idling -> idling. sonst verlasse Idling
  */
-displayDebug();
-} 
 //ende Loop
+}
+
+void encoderInterrupt() {
+  if (digitalRead(ENCODER_A) == digitalRead(ENCODER_B))
+    encoder--;
+  else
+    encoder++;
+}
+
 
 void starting(void){
   justStarted = true; //um es nur einmal zu tun.. wird nach "debounce" ms zurückgesetzt.
