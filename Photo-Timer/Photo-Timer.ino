@@ -41,12 +41,10 @@ unsigned long pressedTime = 0;
 bool justStarted = false;
 bool justStopped = false;
 
-//#include <Encoder.h>
-//Encoder myEnc(2, 3); //besser später selbst implementieren.
-#define ENCODER_A 2
-#define ENCODER_B 3
-volatile int encoder = 0;
-
+#include <Encoder.h>
+Encoder myEnc(2, 3); //besser später selbst implementieren. 
+                     // oder auch nicht.. das bounced wie hölle
+int encoder = 0;
 #define debounce 20 //
 
 
@@ -78,15 +76,11 @@ void setup() {
   pinMode(zehnerStelle, OUTPUT);
   pinMode(relayPin, OUTPUT);
   digitalWrite(relayPin,LOW);
-  Serial.begin(9600);
+  //Serial.begin(9600);
   TimeToDisplay = TimeSet;
 
 //init Inputs
   pinMode(buttonPin,INPUT_PULLUP); //button pins as input with Pullup
-  pinMode(ENCODER_A,INPUT_PULLUP);
-  pinMode(ENCODER_B,INPUT_PULLUP);
-
-  attachInterrupt(digitalPinToInterrupt(ENCODER_A),encoderInterrupt,CHANGE); //interrupt für Rotary-Encoder.
 
 brightness = constrain(brightness, 0, 100);
 LedTime = map(brightness,0,100,0,maxLedTime);
@@ -114,19 +108,12 @@ switch (state) {
 //jeder Loop zu tun
 button();
 anzeige(TimeToDisplay); //wert der Angezeigt werden soll  
-Serial.println(encoder);
+//Serial.println(encoder);
 /* startStop ?? state = IDLING;
 *
  * if ButtonSTART und ich bin nicht in Idling -> idling. sonst verlasse Idling
  */
 //ende Loop
-}
-
-void encoderInterrupt() {
-  if (digitalRead(ENCODER_A) == digitalRead(ENCODER_B))
-    encoder--;
-  else
-    encoder++;
 }
 
 
@@ -137,6 +124,7 @@ void starting(void){
   waitTime = TimeSet * 100L; //axo auf ms umrechenn :-/
   state = WAITING;
   digitalWrite(relayPin,HIGH);
+  myEnc.write(0);
 }
 //ENDE starting(void)
 
@@ -145,6 +133,7 @@ void stopping(void) {
  lastStopTime = currentMillis;
  state = IDLING;
  digitalWrite(relayPin,LOW);
+ myEnc.write(0);
 }
 //ENDE stopping(void)
 
@@ -182,14 +171,28 @@ void idling(void) {
       return;
       }
   if (TimeSave == 0){ //verstellen nur, wenn wir nicht pausiert haben...
-    
- 
+      encoder = myEnc.read()/2;
+    if (encoder != 0) {
+      if (TimeSet >= 100) {
+        TimeSet = TimeSet + encoder*10; 
+      }
+      else {
+        TimeSet = TimeSet + encoder*5; 
+      }
+      myEnc.write(0);// ich will ja nur relative änderung haben..
+    }
+    //TimeSet Limitieren
+    if (TimeSet >= 990) {
+      TimeSet = 990;
+      }
+    if (TimeSet <= 5 ) {
+      TimeSet = 5;  
+    }
   }
   else {
     //es wurde also pausiert!
       if (longPress) {
       longPress = false;
-      Serial.println("longPress Quitiert.. der feuert gleich bestimmt nochmal?");
       TimeSet = TimeSave;
       TimeSave = 0;
       }
@@ -215,7 +218,6 @@ void button(void){ //checks if Buttons are pressed.
       //nur setzen, wenn wir den knopf zwischen durch mal losgelassen haben...
       longPress = true;
       longPressDisable = true;
-      Serial.println("longPress Triggered");
       }
 
     //isPressed und !buttonCheck
@@ -235,8 +237,7 @@ void button(void){ //checks if Buttons are pressed.
      else if ( !((pressedTime < 20) ||(pressedTime > longPressDuration)) && !clickPress) {
       clickPress = true;
       lastReleaseTime = currentMillis;
-       Serial.println("clickPress Triggered");
-      }
+       }
 
     }
     //die flags zurücksetzen!
@@ -253,10 +254,4 @@ void button(void){ //checks if Buttons are pressed.
     }  
 }
 //ENDE button(void)
-
-
-void displayDebug(void) {
-  
-  
-}
 

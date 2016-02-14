@@ -2,8 +2,8 @@
 
 Encoder myEnc(2,3);
 
-int counter = 0;
-
+int counter = 100;
+int diff = 0;
 
 void setup() {
   // put your setup code here, to run once:
@@ -11,13 +11,22 @@ void setup() {
  Serial.begin(9600);
 }
 
-long oldPosition  = -999;
+long oldPosition  = 0;
 
 void loop() {
-  long newPosition = (myEnc.read()/3);
-  if ((newPosition != oldPosition) && (newPosition >= 0)) {
-    
+  long newPosition = (myEnc.read()/2);
+  if (newPosition != oldPosition) {
+    diff = newPosition - oldPosition; 
+    counter = counter + diff;
+    diff = 0;
     oldPosition = newPosition;
-    Serial.println(newPosition);
+    if (counter >=990) {
+       counter = 990;
+       }
+    if (counter <= 2) {
+      counter = 2;
+    }
+    
+    Serial.println(counter);
   }
 }
