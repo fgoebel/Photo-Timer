@@ -27,25 +27,24 @@ byte einerStelle = 14; //A0
 byte zehnerStelle = 13;
 byte relayPin = A5;
 
-byte buttonArray[] = {5,6,7}; //DOWN 16/A2, UP 17/A3, START 18/A4
-unsigned long lastButtonTime[] = {0,0,0}; //Die Zeiten, wann welcher knop das letzte mal gedrückt wurde..
-bool buttonPressed[] = {false,false,false};
+byte buttonPin = 7; 
+bool isPressed = false; //wenn buttonPin gedrückt ist
+bool clickPress = false;
+bool longPress = false; 
+unsigned long buttonPressTime = 0;
+
 bool justStarted = false;
 bool justStopped = false;
 
-#include <Encoder.h>
-Encoder myEnc(2, 3);
+//#include <Encoder.h>
+//Encoder myEnc(2, 3); //besser später selbst implementieren.
 
-#define ButtonDOWN 0
-#define ButtonUP 1
-#define ButtonSTART 2
+
 int debounce = 20; //
-
-//somit sollte ich doch mit buttonArray(ButtonDOWN) an den Pin kommen oder?
 
 
 int TimeToDisplay = 0; //wert in Sec *10 ->> zentel Sekunden sind per integer darstellbar
-int TimeSet = 25; // Berechnung long = int * int geht nicht.. auf long = int * long geändert.
+int TimeSet = 100; //also 10s, Berechnung long = int * int geht nicht.. auf long = int * long geändert.
 int TimeSave = 0; //um nach ablauf auf eingestellten Wert zurückzusetzen.
 int LedTime; //zeit in µs welche die LEDs an sind..
 int maxLedTime = 2000;
@@ -60,7 +59,9 @@ unsigned long TimeSetLastChanged = 0 ;
 unsigned long lastStartTime = 0;
 unsigned long lastStopTime = 0;
 
-unsigned long timeRound = 0;
+
+
+
 //SETUP//
 void setup() {
   for(int i = 0; i < 7; i++)
@@ -74,10 +75,9 @@ void setup() {
   TimeToDisplay = TimeSet;
 
 //init Inputs
- for (int i = 0 ; i < 3; i++) {
-  pinMode(buttonArray[i],INPUT); //button pins as input
-  digitalWrite(buttonArray[i],HIGH); //button pins enable Pullup
- }
+  pinMode(buttonPin,INPUT_PULLUP); //button pins as input with Pullup
+
+
 
 brightness = constrain(brightness, 0, 100);
 LedTime = map(brightness,0,100,0,maxLedTime);
@@ -114,13 +114,14 @@ anzeige(TimeToDisplay); //wert der Angezeigt werden soll
 //ende Loop
 
 void starting(void){
-  justStarted = true; //um es nur einmal zu tun.. wird zurückgesetzt, wenn der kopf losgelassn wird.?
+  justStarted = true; //um es nur einmal zu tun.. wird nach "debounce" ms zurückgesetzt.
   lastStartTime = currentMillis;
   waitStartTime = currentMillis;
   waitTime = TimeSet * 100L; //axo auf ms umrechenn :-/
   state = WAITING;
   digitalWrite(relayPin,HIGH);
 }
+//ENDE starting(void)
 
 void stopping(void) {
  justStopped = true;   
@@ -128,6 +129,7 @@ void stopping(void) {
  state = IDLING;
  digitalWrite(relayPin,LOW);
 }
+//ENDE stopping(void)
 
 
 void waiting(void){
@@ -144,7 +146,7 @@ void waiting(void){
     TimeSave = 0;
       }
     }
-  if (!justStarted && buttonPressed[ButtonSTART] ) {//wenn StartStopp gedrückt -> gehe in stopping
+  if (!justStarted && clickPress ) {//durch Flag "klick" ersetzen.. //wenn StartStopp gedrückt -> gehe in stopping
     state = STOPPING;
     if (TimeSave == 0 ){
     TimeSave = TimeSet; 
@@ -155,75 +157,46 @@ void waiting(void){
 
 void idling(void) {
   //
-  int incrementDelay;
 
-    if (buttonPressed[ButtonUP]){
-      incrementDelay = calcIncDelay(currentMillis, buttonPressed[ButtonUP],lastButtonTime[ButtonUP]); //ms verzögerung
-    }
-    if (buttonPressed[ButtonDOWN]){
-      incrementDelay = calcIncDelay(currentMillis, buttonPressed[ButtonDOWN],lastButtonTime[ButtonDOWN]); //ms verzögerung
-      }
-    
-    if (buttonPressed[ButtonSTART] && !justStopped) { 
-      state = STARTING;
+    if (isPressed && !justStopped) { 
+      state = STARTING; //umschreiben auf Trigger durch release nach min 20ms
       return;
       }
-      int increment = 1;
-  if (TimeSave == 0){
-    if (currentMillis - TimeSetLastChanged > incrementDelay) {
-      if ((buttonPressed[ButtonUP] && !buttonPressed[ButtonDOWN])&&(TimeSet < 990)) {
-        if (TimeSet >=100)
-          increment = 10;
-        TimeSet += increment;
-        TimeSetLastChanged = currentMillis;
-        }
-      else if ((buttonPressed[ButtonDOWN] && !buttonPressed[ButtonUP]) && (TimeSet > 0)) {
-        if (TimeSet>110){
-          increment=10;
-          TimeSet -= increment;
-        }
-        else if (TimeSet > 100)
-          TimeSet = 100;
-        else
-          TimeSet -= increment;
-        TimeSetLastChanged = currentMillis;
-        }    
-    }
-    if (!buttonPressed[ButtonDOWN] && ! buttonPressed[ButtonUP]){
-       TimeSetLastChanged = 0;
-    }
+  if (TimeSave == 0){ //verstellen nur, wenn wir nicht pausiert haben...
+    
+ 
   }
     TimeToDisplay = TimeSet;
   //nur wenn TimeSave nicht gesetzt ist..
 }
-
-int calcIncDelay(unsigned long currentMillis, bool buttonPressed, unsigned long lastButtonTime){
-    if ((currentMillis - lastButtonTime > 500) && buttonPressed ){
-    if (TimeSet > 100)
-      return 100; //wenn man sekunden verstellt nur noch mit 200ms weiter hochzählen
-    else
-     return 50; //erst langsam, dann schneller hihi
-    }
-    return 500;
-  }
-
+//ENDE idling(void)
 
 void button(void){ //checks if Buttons are pressed.
-    for (int i = 0 ; i < 3 ; i++){
-      bool buttonCheck = !digitalRead(buttonArray[i]); //pull-Up --> pressed führt zu low-Pegel
-      if (buttonCheck && !buttonPressed[i]) {
-        if (currentMillis - lastButtonTime[i] > debounce ){
-          buttonPressed[i] = true;
-          lastButtonTime[i] = currentMillis;
-        }     
-      }
-      else if (!buttonCheck) {
-        buttonPressed[i] = false;
-      }  
-    }
+      bool buttonCheck = !digitalRead(buttonPin); //pull-Up --> pressed führt zu low-Pegel
+      
+    //buttonCheck = true, aber !isPressed und lastReleaseTime ist mehr als debounce ms her!
+    //also jetzt isPressed setzen! sonst nix
+
+    //isPressed und buttonCheck und Zeit > 20ms
+    //--> klickWaiting oder so...
+
+    //isPressed und buttonCheck und Zeit >2s
+    //--> longPress
+
+
+    //isPressed und !buttonCheck
+      //zeit < 20ms oder > 2s 
+        // --> setze isPressed = false sonst nix..
+        //---> lastReleaseTime = current
+      //zeit > 20ms und <2s
+        // trigger clickPress
+        //last releaseTime ==current
+    
+    //die flags zurücksetzen!
+
 
     //reset justStarted && justSTopped
-    if (!buttonPressed[ButtonSTART]){
+    if (!isPressed){
       if (justStarted && (currentMillis - lastStartTime > debounce )){
         justStarted = false;
         }
@@ -232,40 +205,8 @@ void button(void){ //checks if Buttons are pressed.
        }
     }  
 }
+//ENDE button(void)
 
 
-void anzeige(int wert){
-  byte einer,zehner;
-  bool doDecimal;
-  if (wert > 99) {
-    doDecimal = false;
-    wert = wert / 10;}
-  else
-    doDecimal = true;
-
-  
-  zehner = int(wert/10);
-  einer = wert - zehner *10; 
-  digitalWrite(zehnerStelle,HIGH); //abschalten
-  digitalWrite(einerStelle,LOW);
-  digitalWrite(zehnerStelle,HIGH);
-  ansteuerung(einer,!doDecimal);
-  digitalWrite(zehnerStelle,LOW);
-  digitalWrite(einerStelle,HIGH);
-  ansteuerung(zehner,doDecimal);  
-  }
-
-void ansteuerung(int a,bool doDecimalPoint){
-  for(int j = 6 ; j >= 0 ; j--){
-    digitalWrite(pinArray[6-j], bitRead(segmente[a],j) == 1?LOW:HIGH);
-  }
-  digitalWrite(decimalPoint, doDecimalPoint?LOW:HIGH); //geht, man weiss aber nicht warum.
-  delayMicroseconds(LedTime); //sorgt dafür, dass die Elemente eine Weile an sind..
-  for (int j = 6; j >=0 ;j--){
-    digitalWrite(pinArray[6-j], HIGH);
-    }
-    digitalWrite(decimalPoint, HIGH);
-  delayMicroseconds(maxLedTime - LedTime);
-}
 
 
