@@ -31,7 +31,12 @@ byte buttonPin = 7;
 bool isPressed = false; //wenn buttonPin gedrückt ist
 bool clickPress = false;
 bool longPress = false; 
+bool longPressDisable = false;
+int longPressDuration = 1000;
+
 unsigned long buttonPressTime = 0;
+unsigned long lastReleaseTime = 0;
+unsigned long pressedTime = 0;
 
 bool justStarted = false;
 bool justStopped = false;
@@ -65,13 +70,13 @@ unsigned long lastStopTime = 0;
 //SETUP//
 void setup() {
   for(int i = 0; i < 7; i++)
-    pinMode(pinArray[i], OUTPUT);
+  pinMode(pinArray[i], OUTPUT);
   pinMode(decimalPoint, OUTPUT);
   pinMode(einerStelle, OUTPUT);
   pinMode(zehnerStelle, OUTPUT);
   pinMode(relayPin, OUTPUT);
   digitalWrite(relayPin,LOW);
-  //Serial.begin(9600);
+  Serial.begin(9600);
   TimeToDisplay = TimeSet;
 
 //init Inputs
@@ -110,6 +115,7 @@ anzeige(TimeToDisplay); //wert der Angezeigt werden soll
 *
  * if ButtonSTART und ich bin nicht in Idling -> idling. sonst verlasse Idling
  */
+displayDebug();
 } 
 //ende Loop
 
@@ -147,6 +153,7 @@ void waiting(void){
       }
     }
   if (!justStarted && clickPress ) {//durch Flag "klick" ersetzen.. //wenn StartStopp gedrückt -> gehe in stopping
+    clickPress = false;
     state = STOPPING;
     if (TimeSave == 0 ){
     TimeSave = TimeSet; 
@@ -154,18 +161,28 @@ void waiting(void){
     TimeSet = TimeToDisplay; // um das abzuspeichern
   }
 }
-
+//ENDE waiting(void)
 void idling(void) {
   //
 
-    if (isPressed && !justStopped) { 
+    if (clickPress && !justStopped) { 
       state = STARTING; //umschreiben auf Trigger durch release nach min 20ms
+      clickPress = false;
       return;
       }
   if (TimeSave == 0){ //verstellen nur, wenn wir nicht pausiert haben...
     
  
   }
+  else {
+    //es wurde also pausiert!
+      if (longPress) {
+      longPress = false;
+      Serial.println("longPress Quitiert.. der feuert gleich bestimmt nochmal?");
+      TimeSet = TimeSave;
+      TimeSave = 0;
+      }
+    }
     TimeToDisplay = TimeSet;
   //nur wenn TimeSave nicht gesetzt ist..
 }
@@ -174,24 +191,43 @@ void idling(void) {
 void button(void){ //checks if Buttons are pressed.
       bool buttonCheck = !digitalRead(buttonPin); //pull-Up --> pressed führt zu low-Pegel
       
-    //buttonCheck = true, aber !isPressed und lastReleaseTime ist mehr als debounce ms her!
-    //also jetzt isPressed setzen! sonst nix
-
-    //isPressed und buttonCheck und Zeit > 20ms
-    //--> klickWaiting oder so...
+    //buttonCheck = true, aber !isPressed und (lastReleaseTime ist mehr als debounce ms) her!
+    //also jetzt isPressed setzen! und buttonPressTime
+    if ( buttonCheck && !isPressed && (currentMillis - lastReleaseTime > debounce)){
+      isPressed = true;
+      buttonPressTime = currentMillis;
+    }
 
     //isPressed und buttonCheck und Zeit >2s
     //--> longPress
-
+    if (!longPressDisable && !longPress && isPressed && buttonCheck && (currentMillis - buttonPressTime > longPressDuration )){
+      //nur setzen, wenn wir den knopf zwischen durch mal losgelassen haben...
+      longPress = true;
+      longPressDisable = true;
+      Serial.println("longPress Triggered");
+      }
 
     //isPressed und !buttonCheck
+    if (isPressed && !buttonCheck){
+      pressedTime = currentMillis - buttonPressTime;
+      isPressed = false;
+      longPressDisable = false;
       //zeit < 20ms oder > 2s 
         // --> setze isPressed = false sonst nix..
-        //---> lastReleaseTime = current
+        //---> lastReleaseTime = curren
+     if ((pressedTime < 20) ||(pressedTime > longPressDuration) ) {
+      lastReleaseTime = currentMillis;
+     }
       //zeit > 20ms und <2s
         // trigger clickPress
         //last releaseTime ==current
-    
+     else if ( !((pressedTime < 20) ||(pressedTime > longPressDuration)) && !clickPress) {
+      clickPress = true;
+      lastReleaseTime = currentMillis;
+       Serial.println("clickPress Triggered");
+      }
+
+    }
     //die flags zurücksetzen!
 
 
@@ -208,5 +244,8 @@ void button(void){ //checks if Buttons are pressed.
 //ENDE button(void)
 
 
-
+void displayDebug(void) {
+  
+  
+}
 
