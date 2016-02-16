@@ -25,7 +25,7 @@ byte pinArray[] = {16,15,10,11,9,17,18}; // Segmente A,B,C,D,E,F,G
 byte decimalPoint = 12;
 byte einerStelle = 14; //A0
 byte zehnerStelle = 13;
-byte relayPin = A5;
+byte relayPin = 4;
 
 byte buttonPin = 7; 
 bool isPressed = false; //wenn buttonPin gedrückt ist
