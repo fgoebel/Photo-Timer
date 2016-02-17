@@ -1,25 +1,5 @@
-byte segmente[10] = { 
-  B01111110, //0  B0ABCDEFG
-  B00110000, //1
-  B01101101, //2
-  B01111001, //3
-  B00110011, //4
-  B01011011, //5
-  B01011111, //6
-  B01110000, //7
-  B01111111, //8
-  B01111011};//9
-  //B00000001 Decimal Point
-  /*wenn man jetzt also den Decimal Point zu den Restlichen Bytes addiert hab ich den Punkt auch an..
-   * so far so good
-   */
-
 enum states {WAITING, IDLING, STARTING, STOPPING};
 states state = IDLING;
-
-enum  motorStates {WAITING_FOR_HIGH, WAITING_FOR_LOW};
-motorStates motorState = WAITING_FOR_HIGH; //bei IR HIGH sind wir auf der Scheibe und können dann gezielt auf low warten.
-
 
 byte pinArray[] = {16,15,10,11,9,17,18}; // Segmente A,B,C,D,E,F,G
 byte decimalPoint = 12;
@@ -160,6 +140,10 @@ void waiting(void){
     }
     TimeSet = TimeToDisplay; // um das abzuspeichern
   }
+  if ((myEnc.read()/2) != 0) {//verhindert verstellen während des laufes..
+    myEnc.write(0);
+  }
+  
 }
 //ENDE waiting(void)
 void idling(void) {
