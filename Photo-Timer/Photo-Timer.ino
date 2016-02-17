@@ -1,25 +1,6 @@
-byte segmente[10] = { 
-  B01111110, //0  B0ABCDEFG
-  B00110000, //1
-  B01101101, //2
-  B01111001, //3
-  B00110011, //4
-  B01011011, //5
-  B01011111, //6
-  B01110000, //7
-  B01111111, //8
-  B01111011};//9
-  //B00000001 Decimal Point
-  /*wenn man jetzt also den Decimal Point zu den Restlichen Bytes addiert hab ich den Punkt auch an..
-   * so far so good
-   */
 
-enum states {WAITING, IDLING, STARTING, STOPPING};
+enum states {WAITING, IDLING, STARTING, STOPPING, PAUSE};
 states state = IDLING;
-
-enum  motorStates {WAITING_FOR_HIGH, WAITING_FOR_LOW};
-motorStates motorState = WAITING_FOR_HIGH; //bei IR HIGH sind wir auf der Scheibe und können dann gezielt auf low warten.
-
 
 byte pinArray[] = {16,15,10,11,9,17,18}; // Segmente A,B,C,D,E,F,G
 byte decimalPoint = 12;
@@ -103,6 +84,9 @@ switch (state) {
   case STOPPING:
     stopping();
     break;
+  case PAUSE:
+    pause();
+    break;
   }
 
 //jeder Loop zu tun
@@ -174,10 +158,10 @@ void idling(void) {
       encoder = myEnc.read()/2;
     if (encoder != 0) {
       if (TimeSet >= 100) {
-        TimeSet = TimeSet + encoder*10; 
+        TimeSet = TimeSet + encoder*10; //ganze Sekunden verstellen
       }
       else {
-        TimeSet = TimeSet + encoder*5; 
+        TimeSet = TimeSet + encoder*5; //halbe Sekunden verstellen
       }
       myEnc.write(0);// ich will ja nur relative änderung haben..
     }
@@ -190,18 +174,32 @@ void idling(void) {
     }
   }
   else {
-    //es wurde also pausiert!
-      if (longPress) {
-      longPress = false;
-      TimeSet = TimeSave;
-      TimeSave = 0;
-      }
     }
     TimeToDisplay = TimeSet;
   //nur wenn TimeSave nicht gesetzt ist..
 }
 //ENDE idling(void)
 
+
+void pause(void) {
+      if (clickPress && !justStopped) { 
+      state = STARTING; //umschreiben auf Trigger durch release nach min 20ms
+      clickPress = false;
+      return;
+      }
+          //es wurde also pausiert!
+      if (longPress) { //zurücksetzten ah.. state wechseln!
+      longPress = false;
+      TimeSet = TimeSave;
+      TimeSave = 0;
+      state = IDLING; //weil jetzt ist ja nichtmehr pause
+      }
+      if ((myEnc.read()/2) != 0) {
+      myEnc.write(0); //somit kann ich jetzt dran drehen ohne das sich was verstellt
+      }
+  }
+
+  
 void button(void){ //checks if Buttons are pressed.
       bool buttonCheck = !digitalRead(buttonPin); //pull-Up --> pressed führt zu low-Pegel
       
