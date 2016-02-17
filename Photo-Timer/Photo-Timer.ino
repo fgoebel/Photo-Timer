@@ -32,8 +32,8 @@ int TimeToDisplay = 0; //wert in Sec *10 ->> zentel Sekunden sind per integer da
 int TimeSet = 100; //also 10s, Berechnung long = int * int geht nicht.. auf long = int * long geändert.
 int TimeSave = 0; //um nach ablauf auf eingestellten Wert zurückzusetzen.
 int LedTime; //zeit in µs welche die LEDs an sind..
-int maxLedTime = 2000;
-byte brightness = 20;
+int maxLedTime = 1000;
+byte brightness = 1;
 unsigned long waitTime = 0; //ms Verzögerung Motor 
 int updateInterval = 100; //ms um display upzudaten.
 unsigned long currentMillis;
@@ -179,6 +179,7 @@ void idling(void) {
       longPress = false;
       TimeSet = TimeSave;
       TimeSave = 0;
+      myEnc.write(0);
       }
     }
     TimeToDisplay = TimeSet;
